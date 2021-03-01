@@ -7,8 +7,7 @@ defmodule Rocketpay.Accounts.Operation do
 
     Multi.new()
     |> Multi.run(operation_name, fn repo, _changes -> get_account(repo, id) end)
-    |> Multi.run(operation, fn repo, changes ->
-      account = Map.get(changes, operation_name)
+    |> Multi.run(operation, fn repo, %{^operation_name => account} ->
       update_balance(repo, account, value, operation)
     end)
   end
@@ -32,13 +31,17 @@ defmodule Rocketpay.Accounts.Operation do
 
   defp exec_operation(%Account{balance: balance}, value, operation) do
     case Decimal.cast(value) do
-      {:ok, value} ->
-        case operation do
-          :deposit -> Decimal.add(balance, value)
-          :withdraw -> Decimal.sub(balance, value)
-          _ -> {:error, "Invalid operation!"}
+      {:ok, value}  ->
+        if Decimal.gt?(value, "0.0") do
+          case operation do
+            :deposit -> Decimal.add(balance, value)
+            :withdraw -> Decimal.sub(balance, value)
+            _ -> {:error, "Invalid operation!"}
+          end
+        else
+          {:error, "Invalid #{Atom.to_string(operation)} value! (must be positive)"}
         end
-      :error -> {:error, "Invalid deposit value!"}
+      :error -> {:error, "Invalid #{Atom.to_string(operation)} value!"}
     end
   end
 
