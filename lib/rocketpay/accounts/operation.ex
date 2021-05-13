@@ -24,8 +24,8 @@ defmodule Rocketpay.Accounts.Operation do
       {:error, _reason} = error -> error
       value ->
         account
-      |> Account.changeset(%{balance: value})
-      |> repo.update()
+        |> Account.changeset(%{balance: value})
+        |> repo.update()
     end
   end
 
